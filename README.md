@@ -25,14 +25,7 @@
 
 ---
 
-<!-- ─────────────────────────────────────────────────────────────────────────
-     Unit 7 asks for the first five sections. Unit 8 adds the five below.
-
-     Everything is pasted as TEXT. A pasted curl response gets full credit;
-     a picture of your terminal gets none.
-     ───────────────────────────────────────────────────────────────────────── -->
-
-<!-- ═══════════════════════ UNIT 7 — THE BUILD ═══════════════════════ -->
+# Unit 7
 
 ## What This Does
 
@@ -51,21 +44,21 @@
      The blind spot is not optional. If you can't name it you don't understand
      the signal yet — and unit 8's attack set is built out of blind spots. -->
 
-### Signal one — the model signal
+### Signal one — the model signal (`detector.py`)
 
-**What it measures:**
+**What it measures:** Text predictability and token sequence likelihood using a local language model.
 
-**Why that might differ between human and AI writing:**
+**Why that might differ between human and AI writing:** AI models naturally select statistically common tokens, producing predictable patterns (words in sequence), whereas human writers often use unexpected phrasing or unique word choices. 
 
-**What it can't see:**
+**What it can't see:** Plain, direct writing. Simple vocabulary and short, straightforward sentences (common in plain prose or non-native writing) score as highly predictable and get falsely flagged as AI, while dense or ornate AI prose can fool it into reading as human.
 
-### Signal two — the style signal
+### Signal two — the style signal (`stylometry.py`)
 
-**What it measures:**
+**What it measures:** Surface-level structural features like sentence length variation, unique word ratio (vocabulary diversity), and punctuation density.
 
-**Why that might differ between human and AI writing:**
+**Why that might differ between human and AI writing:** Human writing naturally varies in rhythm, sentence length, and structural shape, while AI writing tends to maintain uniform structural patterns.
 
-**What it can't see:**
+**What it can't see:** Content meaning or intent. Minor surface edits like adding typos, breaking up long sentences, or pasting quotations alter the metrics without changing the text's substance, and it breaks down on short submissions where there isn't enough text for statistical measurement.
 
 ### The combining rule
 
