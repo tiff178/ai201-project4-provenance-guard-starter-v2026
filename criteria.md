@@ -42,63 +42,44 @@ Two things worth knowing before you pick numbers:
   a **miss**.
 
 ---
-## 1.
 
-<!-- Your criterion. It must name a number. -->
+## 1. Real writers are almost never falsely flagged as AI
 
+Of the 10 texts I wrote myself, at most 1 receives a `high-confidence AI` label. An `unsure` label does not count as a false positive. 
 
-
-**Why this target:**
-
-
+**Why this target:** On a writing site where authors publish their original work, false accusations damage trust and harm real writers. Minimizing false positives ensures that real writers are rarely misflagged. An `unsure` outcome is an honest admission of the system uncertainty rather than a false accusation, so it does not penalize the author.
 
 ---
 
-## 2.
+## 2. Clearly-AI and clearly-human text score clearly apart
 
-<!-- Your criterion. -->
+Across 5 clearly-AI and 5 clearly-human texts, the average confidence score for AI texts is at least 0.3 higher than the average confidence score for human texts. 
 
-
-
-**Why this target:**
-
-
+**Why this target:** A multi-signal system is only useful if it creates meaningful statistical separation between synthetic and authentic writing. If scores for both types of text cluster tightly in the middle (e.g. an average of 0.48 for human text vs. 0.52 for AI text), the detector fails to give readers/moderators actionable clarity. Requiring a gap of at least 0.3 ensures that combining the model and style signals creates genuine separation between human and AI writing.
 
 ---
 
-## 3.
+## 3. Every label (`high-confidence AI`, `high-confidence human`, `unsure`) is reachable
 
-<!-- Your criterion. -->
+Across a test suite of 15 varied text submissions, each of the three labels is assigned to at least 2 submissions. 
 
-
-
-**Why this target:**
-
-
+**Why this target:** A classification system with poorly calibrated thresholds or dead zones might never output certain labels (like  `high-confidence human` or `unsure`). Requiring each label to be reached at least twice proves that the scoring thresholds are properly balanced and that every designated label is accessible. 
 
 ---
 
-## 4.
+## 4. Appeals always change status and are recorded 
 
-<!-- Your criterion. -->
+Across 10 submitted appeals, 10 of 10 (100%) `POST /appeal` requests successfully update the status to `under_review` in `logs/audit.jsonl` with a timestamp and the writer's reasoning. 
 
-
-
-**Why this target:**
-
-
+**Why this target:** Automated detection is inherently imperfect, so authors require a guaranteed, audit-logged recourse mechanism whenever they contest a label. If an appeal drops silently or fails to update the audit log, authors are left without recourse when misflagged.
 
 ---
 
-## 5.
+## 5. Missing, empty, or enormous texts are handled explicitly
 
-<!-- Your criterion. -->
+Across 10 texts that are missing, empty, or enormous, 10 of 10 (100%) return an HTTP 400 Bad Request status code with a descriptive JSON error message, without crashing the server or recording corrupted entries in `logs/audit.jsonl`.
 
-
-
-**Why this target:**
-
-
+**Why this target:** Empty or missing text can cause scoring calculation errors and pollute audit logs with useless records, while enormous text risks crashing the server or causing DOS delays. Returning an explicit HTTP 400 Bad Request status code protects server availability, keeps audit logs clean, and gives the client clear feedback.
 
 ---
 
