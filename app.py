@@ -223,12 +223,14 @@ def submit():
     model_score = detector.model_signal(text)
     style_score = stylometry.style_signal(text)
     combined_score = scoring.combine_signals(model_score, style_score)
-    label = "placeholder"  # placeholder — Milestone 5
+    guess, label = scoring.score_to_label(combined_score)
+
+    confidence = round(abs(combined_score - 0.5) * 2, 4) 
 
     audit.log_decision(
         content_id=content_id,
         creator_id=creator_id,
-        guess=None,
+        guess=guess,
         model_score=model_score,
         style_score=style_score,
         combined_score=combined_score,
@@ -237,8 +239,8 @@ def submit():
 
     return jsonify({
         "content_id": content_id,
-        "guess": None, 
-        "confidence": combined_score,
+        "guess": guess, 
+        "confidence": confidence,
         "label": label,
         "model_score": model_score,
         "style_score": style_score, 
@@ -265,14 +267,49 @@ def appeal():
     to the person on the other end. It's the only thing standing between a
     wrong accusation and nothing at all.
     """
-    payload = request.get_json(silent=True) or {}
+    payload = request.get_json(silent=True)
 
-    # TODO: delete this and build the route.
+    if not isinstance(payload, dict):
+        payload = {}
+
+    content_id = payload.get("content_id")
+    reasoning = payload.get("reasoning")
+
+    if not isinstance(content_id, str) or not content_id.strip():
+        return jsonify({"error": "invalid_content_id", "message": "`content_id` must be a non-empty string"}), 400
+
+    if not isinstance(reasoning, str) or not reasoning.strip():
+        return jsonify({"error": "invalid_reasoning", "message": "`reasoning` must be a non-empty string"}), 400
+
+    content_id = content_id.strip()
+    entries = audit.entries_for(content_id)
+    decision = next((e for e in entries if e.get("event") is None), None)
+
+    if decision is None:
+        return jsonify({
+            "error": "unknown_content_id",
+            "message": f"No submission found with content_id {content_id!r}",
+        }), 404
+
+    if any(e.get("event") == "appeal" for e in entries):
+        return jsonify({
+            "error": "already_appealed",
+            "message": "This decision has already been appealed and is under review.",
+            "content_id": content_id,
+            "status": "under_review",
+        }), 409
+
+    audit.log_appeal(
+        content_id=content_id,
+        creator_id=decision.get("creator_id", "unknown"),
+        reasoning=reasoning.strip(),
+    )
+
     return jsonify({
-        "error": "not_implemented",
-        "message": "POST /appeal isn't built yet — see the TODO in app.py.",
-        "you_sent": payload,
-    }), 501
+        "content_id": content_id,
+        "status": "under_review",
+        "message": "Your appeal has been recorded and the decision is now under review.",
+    })
 
 
 # ── Already works ─────────────────────────────────────────────────────────────

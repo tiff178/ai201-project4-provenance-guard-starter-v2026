@@ -84,30 +84,19 @@ This rule protects real writers from false accusations whenever signals disagree
 
 ## Label Variants
 
-<!-- The exact text of all three labels, as a reader would see them, and the
-     score range each covers.
-
-     Write them for someone who has never heard the word "threshold". -->
-
 | Label | Score range | The exact text a reader sees |
 |---|---|---|
-| high-confidence human |  |  |
-| unsure |  |  |
-| high-confidence AI |  |  |
+| high-confidence human | 0.00 - 0.35 | We think this was probably written by a person. |
+| unsure | 0.35 - 0.70 | We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work. |
+| high-confidence AI | 0.70 - 1.00 | This may have been written by AI. This is an estimate, not proof. If you wrote it yourself, you can appeal and a person will review it. |
 
-**Why I worded the "unsure" one this way:**
-<!-- It's the hardest of the three. It has to admit uncertainty without
-     sounding like an accusation, because the person reading it may well have
-     written every word themselves. -->
+**Why I worded the "unsure" one this way:** The `unsure` label is the hardest of the three. It has to admit uncertainty without sounding like an accusation, because the writer could have written every word themselves. 
 
-
+"Nothing is being assumed about you or your work." prevents false accusations to writers and attributes uncertainty in the system rather than to the writer. 
 
 ---
 
 ## Sample Run
-
-<!-- One submission and one appeal, pasted as text: the request, the response,
-     and the log entries. -->
 
 **A submission**
 
@@ -119,11 +108,18 @@ This rule protects real writers from false accusations whenever signals disagree
 ```bash
 $ curl -X POST http://127.0.0.1:5000/submit \
   -H "Content-Type: application/json" \
-  -d '{"text": "", "creator_id": "..."}'
+  -d '{"text": "No way! You did an amazing job presenting your speech.", "creator_id": "tiff"}'
 ```
 
 ```json
-
+{
+  "confidence": 0.3406,
+  "content_id": "8d8feb34-7bf5-42ba-9740-664d66bd5f9c",
+  "guess": "human",
+  "label": "We think this was probably written by a person.",
+  "model_score": 0.2756,
+  "style_score": 0.3838239541920477
+}
 ```
 
 **An appeal**
@@ -131,11 +127,15 @@ $ curl -X POST http://127.0.0.1:5000/submit \
 ```bash
 $ curl -X POST http://127.0.0.1:5000/appeal \
   -H "Content-Type: application/json" \
-  -d '{"content_id": "...", "reasoning": "..."}'
+  -d '{"content_id": "c01e5c56-f341-4e2b-9309-21b3c55d3f1c", "reasoning": "I wrote this myself for a class assignment."}'
 ```
 
 ```json
-
+{
+  "content_id": "c01e5c56-f341-4e2b-9309-21b3c55d3f1c",
+  "message": "Your appeal has been recorded and the decision is now under review.",
+  "status": "under_review"
+}
 ```
 
 **What the log shows afterwards**
@@ -145,7 +145,41 @@ $ curl "http://127.0.0.1:5000/log?limit=3"
 ```
 
 ```json
-
+{
+  "count": 3,
+  "entries": [
+    {
+      "combined_score": 0.628892329365344,
+      "content_id": "e8ab9851-7152-40fb-9386-f5652252ee67",
+      "creator_id": "tiff",
+      "guess": "unsure",
+      "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+      "model_score": 0.8567,
+      "status": "decided",
+      "style_score": 0.401084658730688,
+      "timestamp": "2026-11-01T04:41:07+00:00"
+    },
+    {
+      "combined_score": 0.8404485657136469,
+      "content_id": "c01e5c56-f341-4e2b-9309-21b3c55d3f1c",
+      "creator_id": "tiff",
+      "guess": "ai",
+      "label": "This may have been written by AI. This is an estimate, not proof. If you wrote it yourself, you can appeal and a person will review it.",
+      "model_score": 0.9426,
+      "status": "decided",
+      "style_score": 0.7382971314272938,
+      "timestamp": "2026-11-01T04:47:44+00:00"
+    },
+    {
+      "content_id": "c01e5c56-f341-4e2b-9309-21b3c55d3f1c",
+      "creator_id": "tiff",
+      "event": "appeal",
+      "reasoning": "I wrote this myself for a class assignment.",
+      "status": "under_review",
+      "timestamp": "2026-11-01T04:49:02+00:00"
+    }
+  ]
+}
 ```
 
 ---

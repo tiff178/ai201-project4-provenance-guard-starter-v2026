@@ -105,7 +105,7 @@ def punctuation_density(text: str) -> float:
     tokens = words(text)
     if not tokens:
         return 0.0
-    marks = re.findall(r"[,;:—–()\-]", text)
+    marks = re.findall(r"[,;:—()\-]", text)
     return len(marks) / len(tokens)
 
 
