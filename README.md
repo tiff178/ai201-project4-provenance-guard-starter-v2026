@@ -38,12 +38,6 @@
 
 ## Signals and Scoring
 
-<!-- For each signal: what property it measures, why that might differ between
-     human and AI writing, and WHAT IT CAN'T SEE.
-
-     The blind spot is not optional. If you can't name it you don't understand
-     the signal yet — and unit 8's attack set is built out of blind spots. -->
-
 ### Signal one — the model signal (`detector.py`)
 
 **What it measures:** Text predictability and token sequence likelihood using a local language model.
@@ -62,21 +56,29 @@
 
 ### The combining rule
 
-<!-- Write the rule in words, then give the numbers. What happens when the two
-     signals disagree? -->
+**The rule:** Average the two signals with equal weight. If they disagree by more than 0.3, don't let the result leave the `unsure` band. Two methods splitting that far is uncertainty, and neither signal alone should be able to accuse a writer. 
 
-**The rule:**
-
-**The numbers:**
+**The numbers:** 
+- WEIGHT_MODEL_SIGNAL = 0.5
+- WEIGHT_STYLE_SIGNAL = 0.5
+- DISAGREEMENT_LIMIT = 0.3 
+- HUMAN_THRESHOLD = 0.35
+- AI_THRESHOLD = 0.7
+- `Unsure` = 0.35 to 0.7
 
 **Where it lives:** `scoring.py::combine_signals`
 
-<!-- ⚠️ The grader checks your code against that line. If your rule lives
-     somewhere else, say where. -->
-
 **A case where my two signals split, and what my rule does with it:**
 
+A famous quote from Marilyn Monroe: 
 
+``` 
+I'm selfish, impatient and a little insecure. I make mistakes, I am out of control and at times hard to handle. But if you can't handle me at my worst, then you sure as hell don't deserve me at my best.
+```
+
+The model signal (`detector.py:model_signal`) scores it as 0.8389, whereas the style signal (`stylometry.py:style_signal`) scores it as 0.4511. The model signal believes this text is most likely AI, whereas the style signal does not believe it is likely to be AI. The two combined signal scores average to 0.645, which is under the 0.7 line to be indicated as AI. The signals also disagree by 0.39, which is more than my 0.3 limit, so the rule holds the result inside the `unsure` band instead of letting one signal decide. As this is a famous quote, a LLM finds this text very easy to predict (more likely to be AI), whereas the style signal looks at rhythm, sentence length, and structural shape (not as likely to be AI). Both signals have little to work with given the short text. 
+
+This rule protects real writers from false accusations whenever signals disagree with each other, keeping texts safely inside the `unsure` band.
 
 ---
 
@@ -117,7 +119,7 @@
 ```bash
 $ curl -X POST http://127.0.0.1:5000/submit \
   -H "Content-Type: application/json" \
-  -d '{"text": "...", "creator_id": "..."}'
+  -d '{"text": "", "creator_id": "..."}'
 ```
 
 ```json
