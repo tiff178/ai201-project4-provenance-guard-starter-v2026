@@ -25,6 +25,7 @@ Routes:
 """
 
 import uuid
+import detector
 
 from flask import Flask, jsonify, request
 
@@ -199,17 +200,46 @@ def submit():
     what should this do when `text` is missing, empty, or enormous? A crash on
     a malformed input is one of the most common real failures there is.
     """
-    payload = request.get_json(silent=True) or {}
 
-    # TODO: delete this and build the route.
+    payload = request.get_json(silent=True)
+
+    if not isinstance(payload, dict):
+        payload = {}
+
+    text = payload.get("text")
+    creator_id = payload.get("creator_id")
+
+    if not isinstance(creator_id, str) or not creator_id.strip():
+        creator_id = "unknown"
+
+    if not isinstance(text, str) or not text.strip():
+        audit.log_rejection(creator_id=creator_id, reason="missing_or_empty_text")
+        return jsonify({"error": "invalid_text", "message": "`text` must be a non-empty string"}), 400
+
+    content_id = str(uuid.uuid4())
+
+    model_score = detector.model_signal(text)
+    confidence = 0.0  # placeholder — Milestone 4
+    label = "placeholder"  # placeholder — Milestone 5
+
+    audit.log_decision(
+        content_id=content_id,
+        creator_id=creator_id,
+        guess=None,
+        model_score=model_score,
+        style_score=None,
+        combined_score=None,
+        label=label,
+    )
+
     return jsonify({
-        "error": "not_implemented",
-        "message": "POST /submit isn't built yet — see the TODO in app.py.",
-        "you_sent": {
-            "text_length": len(payload.get("text", "")),
-            "creator_id": payload.get("creator_id"),
-        },
-    }), 501
+        "content_id": content_id,
+        "guess": None, # Milestone 4 
+        "confidence": confidence,
+        "label": label,
+        "model_score": model_score,
+        "style_score": None, # Milestone 4
+    })
 
 
 @app.post("/appeal")
