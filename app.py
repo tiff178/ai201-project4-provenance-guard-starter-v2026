@@ -312,6 +312,43 @@ def appeal():
     })
 
 
+@app.get("/content/<content_id>")
+def get_content(content_id):
+    """
+    One item's current status, read back from the audit log.
+
+        curl http://127.0.0.1:5000/content/<content_id>
+
+    The log is append-only, so "current" means the last entry for the id.
+    """
+    entries = audit.entries_for(content_id.strip())
+    decision = next((e for e in entries if e.get("event") is None), None)
+
+    if decision is None:
+        return jsonify({
+            "error": "unknown_content_id",
+            "message": f"No submission found with content_id {content_id!r}",
+        }), 404
+
+    appeal = next((e for e in reversed(entries) if e.get("event") == "appeal"), None)
+
+    return jsonify({
+        "content_id": decision["content_id"],
+        "creator_id": decision.get("creator_id"),
+        "status": entries[-1].get("status", decision.get("status")),
+        "guess": decision.get("guess"),
+        "label": decision.get("label"),
+        "model_score": decision.get("model_score"),
+        "style_score": decision.get("style_score"),
+        "combined_score": decision.get("combined_score"),
+        "decided_at": decision.get("timestamp"),
+        "appeal": {
+            "reasoning": appeal.get("reasoning"),
+            "appealed_at": appeal.get("timestamp"),
+        } if appeal else None,
+    })
+
+
 # ── Already works ─────────────────────────────────────────────────────────────
 
 @app.get("/log")

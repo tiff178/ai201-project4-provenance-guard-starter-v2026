@@ -29,10 +29,17 @@
 
 ## What This Does
 
-<!-- The path a submission takes, from arriving to the label a reader sees.
-     Six or seven steps — this is the trace you wrote in Milestone 1. -->
+Provenance Guard is a web service that estimates whether a piece of writing was written by a person or by AI. It never gives a verdict. It gives a label, and a writer who disagrees can appeal. When a submission arrives at `POST /submit`, the service does these steps:
 
+1. **Receive and validate.** The route reads `text` and `creator_id` from the JSON body. If `text` is missing or empty, it logs a rejection and returns a 400 instead of crashing. A missing `creator_id` becomes `"unknown"`.
+2. **Assign a `content_id`.** Each accepted submission gets a unique ID, which `/appeal` and the audit log use later.
+3. **Score with the model signal.** `detector.py:model_signal` uses a local language model to measure how predictable the text is. Predictable text scores closer to 1 (more likely AI). 
+4. **Score with the style signal.** `stylometry.py:style_signal` measures sentence-length variation, vocabulary diversity and punctuation density. This is a different kind of evidence from the first signal.
+5. **Combine the signals.** `scoring.py:combine_signals` averages the two scores with equal weight. If they disagree by more than 0.3, the result stays in the `unsure` band, so neither signal alone can accuse a writer.
+6. **Map the score to a label.** `scoring.py:score_to_label` turns the combined score into one of three labels: high-confidence human (below 0.35), unsure (0.35 to 0.70), or high-confidence AI (0.70 and above). Each label has fixed wording for the reader.
+7. **Log and respond.** `audit.py:log_decision` records the content ID, creator, guess, both signal scores, the combined score and the label. The response returns `content_id`, `guess`, `confidence`, `label`, `model_score` and `style_score`.
 
+If a writer thinks the label is wrong, they send the `content_id` and their reasoning to `POST /appeal`. The service checks that the ID exists and that it hasn't already been appealed. It then logs the appeal and sets the status to `under_review`, so a person can look at it. `GET /log` shows every decision and appeal.
 
 ---
 
@@ -99,11 +106,6 @@ This rule protects real writers from false accusations whenever signals disagree
 ## Sample Run
 
 **A submission**
-
-<!-- The response needs content_id, guess, confidence, label, AND both
-     signal scores - model_score and style_score. Unit 8's tools read those
-     two off the response, so leaving them out costs you next unit's
-     diagnostics. -->
 
 ```bash
 $ curl -X POST http://127.0.0.1:5000/submit \
@@ -184,19 +186,45 @@ $ curl "http://127.0.0.1:5000/log?limit=3"
 
 ---
 
+## Stretch Features
+`GET /content/<id>`: endpoint that returns one item's current status (`app.py:get_content`)
+
+**An item's current status**
+```bash
+$ curl "http://127.0.0.1:5000/content/c01e5c56-f341-4e2b-9309-21b3c55d3f1c"
+```
+
+```json
+{
+  "appeal": {
+    "appealed_at": "2026-11-01T04:49:02+00:00",
+    "reasoning": "I wrote this myself for a class assignment."
+  },
+  "combined_score": 0.8404485657136469,
+  "content_id": "c01e5c56-f341-4e2b-9309-21b3c55d3f1c",
+  "creator_id": "tiff",
+  "decided_at": "2026-11-01T04:47:44+00:00",
+  "guess": "ai",
+  "label": "This may have been written by AI. This is an estimate, not proof. If you wrote it yourself, you can appeal and a person will review it.",
+  "model_score": 0.9426,
+  "status": "under_review",
+  "style_score": 0.7382971314272938
+}
+```
+
 ## How I Used AI
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Brainstorming session for the criterion into Claude - "My system allows this rate of wrongly flagging human writing as AI-generated. Write the message a real writer would send me if they were one of the people that rate allows. Don't tell me whether my number is right." 
+- *What came back:* An appeal from a wrongly flagged writer as an email format asking for a human review of submission or way to submit evidence, correction to the label on record, and explanation of what tool looks at. The writer suggests to think aout how a "high-confidence" label affects people like her, who has no way to prove a negative once it's stamped onto their work. 
+- *What I changed:* My criterion for false positives only allows at most 1 with a `high-confidence AI` label already, so this already ensures that real writers are rarely misflagged. No changes were needed, it confirmed that my criterion does minimize false positives. 
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* A clearly-AI text from Claude that will then be used for appeal.
+- *What came back:* A clearly-AI text to be used on submission and appeal. 
+- *What I changed:* Had to test a few different prompts with Claude to get a stronger clearly-AI text as the ones I was trying to generate fell under `unsure` more often. 
 
 <!-- ═══════════════════════ UNIT 8 — THE TEST ═══════════════════════ -->
 
