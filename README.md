@@ -201,30 +201,45 @@ $ curl "http://127.0.0.1:5000/content/c01e5c56-f341-4e2b-9309-21b3c55d3f1c"
 - *What came back:* A clearly-AI text to be used on submission and appeal. 
 - *What I changed:* Had to test a few different prompts with Claude to get a stronger clearly-AI text as the ones I was trying to generate fell under `unsure` more often. 
 
-<!-- ═══════════════════════ UNIT 8 — THE TEST ═══════════════════════ -->
-
 ---
+
+# Unit 8
 
 ## Rate Limiting
 
-**My limits:** ___ per minute, ___ per day
+**My limits:** 8 per minute, 150 per day
 
-**Why those numbers and not others:**
-<!-- Think about two people: a real writer submitting their own work a few
-     times an hour, and a script sending a thousand variations to map your
-     thresholds. Your numbers have to be liveable for the first and hostile to
-     the second. -->
+**Why those numbers and not others:** A limit of 8 requests per minute provides real writers ample headroom to edit and resubmit their work in quick succession. The limit of 150 requests per day protects backend resources against low/slow scraping over a 24-hour window without restricting real writers who iterate on their work throughout the day. 
 
-**What a caller counts as:** <!-- per address, or per creator_id? They fail
-differently — one script can look like a thousand callers, and one household
-can look like one. -->
+**What a caller counts as:** per-address (`get_remote_address`)
 
 **The run of status codes when I pushed past it:**
 
-<!-- python run_attacks.py --flood 15 -->
+`python run_attacks.py --flood 15`
 
 ```
+15 submissions as 'flood_tester' against http://127.0.0.1:5000
+The first one is slow while the model loads.
 
+  [ 1/15] 200
+  [ 2/15] 200
+  [ 3/15] 200
+  [ 4/15] 200
+  [ 5/15] 200
+  [ 6/15] 200
+  [ 7/15] 200
+  [ 8/15] 200
+  [ 9/15] 429
+  [10/15] 429
+  [11/15] 429
+  [12/15] 429
+  [13/15] 429
+  [14/15] 429
+  [15/15] 429
+
+============================================================
+200 200 200 200 200 200 200 200 429 429 429 429 429 429 429
+============================================================
 ```
 
 ---
