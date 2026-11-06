@@ -246,23 +246,82 @@ The first one is slow while the model loads.
 
 ## Attack Run — Before
 
-<!-- Every attack with its outcome and a held-or-broke mark.
-     `run_attacks.py --label before` produces the table. -->
+| ID | Family | Targeting | Status | Content ID | Guess | Score | Verdict |
+|---|---|---|---|---|---|---|---|
+| EV01 | evasion | signal two: typos raise word variety | 200 | `773b992e-b76b-405e-8d1f-6b1e52f178ba` | unsure | 0.259 | BROKE |
+| EV02 | evasion | signal two: broken-up sentences raise length spread | 200 | `2dc73af3-d739-4917-9060-cbb78b8fdecb` | unsure | 0.037 | BROKE |
+| EV03 | evasion | signal two: a pasted quotation changes the shape | 200 | `b951cdba-4816-4862-9178-31c600266fa7` | unsure | 0.153 | BROKE |
+| EV04 | evasion | signal one: unusual words raise perplexity | 200 | `ea1139f9-ad54-490a-8e93-2b4666db8ab0` | unsure | 0.166 | BROKE |
+| EV05 | evasion | both signals: heavy human editing pass | 200 | `3a10277c-0426-49df-a398-dd4943e6076f` | human | 0.302 | BROKE |
+| EV06 | evasion | signal two: one very long sentence and one very short | 200 | `bec0dcac-8205-4b2a-ab13-30ae229c4356` | unsure | 0.065 | BROKE |
+| EV07 | evasion | signal two: padding with punctuation | 200 | `84bf77f1-258f-4085-be80-efbaf5f89f3a` | unsure | 0.005 | BROKE |
+| EV08 | evasion | signal one: text below the token window | 200 | `e727644b-845b-49fe-9862-18c2913e0571` | unsure | 0.182 | BROKE |
+| EV09 | evasion | both: AI text with a human opening paragraph bolted on | 200 | `1c5cc5c7-730d-4e46-ba5b-70a8c5c0e563` | unsure | 0.165 | BROKE |
+| EV10 | evasion | signal two: repeated stanza structure | 200 | `458f9b1a-e73d-4cf9-ba9c-171b8954b16b` | ai | 0.741 | HELD |
+| FP01 | false_positive | plain, clear human writing with no flourishes | 200 | `5a0ec27f-ae4e-429d-9005-24d3cfa698d3` | unsure | 0.199 | HELD |
+| FP02 | false_positive | human writing in a formal register | 200 | `3b2b611a-0585-4465-80ca-f8a020d4adfb` | unsure | 0.400 | HELD |
+| FP03 | false_positive | a non-native English speaker writing carefully | 200 | `a3b14e53-c6df-430d-aa7c-f20ee8998f5f` | ai | 0.455 | BROKE |
+| FP04 | false_positive | a student essay written to a rubric | 200 | `3c276dde-8f8a-4a4a-800b-b00d9b1b3430` | ai | 0.417 | BROKE |
+| FP05 | false_positive | technical documentation written by a person | 200 | `9fc1d82f-3da3-4675-8e2c-7d9f815b456a` | ai | 0.465 | BROKE |
+| FP06 | false_positive | a person imitating a formal template | 200 | `a38d43ba-b359-482a-b1ca-431a785bf817` | unsure | 0.380 | HELD |
+| FP07 | false_positive | human writing that repeats a phrase deliberately | 200 | `b584e435-a053-43ae-bcd3-649aa764acb1` | unsure | 0.380 | HELD |
+| FP08 | false_positive | very short genuine human submission | 200 | `907b69a8-364f-4399-b10c-fa182b277c25` | unsure | 0.155 | HELD |
+| PI01 | prompt_injection | instruction to ignore the check | 200 | `6004d4c5-05f1-4181-86d3-2296e3905598` | unsure | 0.070 | HELD |
+| PI02 | prompt_injection | instruction disguised as a system message | 200 | `692ded33-91a0-4e2f-b279-0341c1811c03` | human | 0.406 | BROKE |
+| PI03 | prompt_injection | instruction wrapped in the writer's voice | 200 | `b12358f3-f817-410a-a237-a8dc9e32d14d` | unsure | 0.086 | HELD |
+| PI04 | prompt_injection | attempt to make the label text hostile | 200 | `f0d67daf-3dc4-422b-82f8-80b0874089cd` | unsure | 0.051 | HELD |
+| PI05 | prompt_injection | attempt to inject into the audit log | 200 | `87eb1b9c-6be3-431a-bd78-75fb16fc4cb7` | unsure | 0.173 | HELD |
+| PI06 | prompt_injection | instruction plus real human text | 200 | `4777d5e6-2250-45ec-b4bc-090520bc91cc` | unsure | 0.137 | HELD |
+| MF01 | malformed | text is only whitespace | 400 | `—` | — | — | HELD |
+| MF02 | malformed | text is a single character | 500 | `—` | — | — | BROKE |
+| MF03 | malformed | text is control characters | 200 | `1c32771e-2432-4f72-bb5c-899984c82d31` | unsure | 0.280 | HELD |
+| MF04 | malformed | text is only punctuation | 200 | `65bd6003-be08-4744-b881-e51c99b4c25a` | unsure | 0.011 | HELD  |
+| MF05 | malformed | text is a very long single word | 200 | `5793a466-07bb-4dfe-984d-1cba376f431d` | unsure | 0.380 | HELD |
+| MF06 | malformed | text is emoji only | 200 | `1bd130cd-e267-4ff0-9d9a-ca531935bba8` | ai | 0.997 | BROKE |
+| MF07 | malformed | text is right-to-left script | 200 | `4df24544-a879-4544-974a-c3af3ca01c27` | ai | 0.906 | BROKE |
+| MF08 | malformed | text is 60,000 characters | 200 | `a2923b1f-20c4-413c-9bb8-5eadd0e6901c` | unsure | 0.380 | HELD |
+| RQ01 | malformed | no text field at all | 400 | `—` | — | — | HELD |
+| RQ02 | malformed | no creator_id | 200 | `f345e9c4-d740-4267-8c5d-5f8ea661bd04` | unsure | 0.094 | HELD |
+| RQ03 | malformed | text is a number | 400 | `—` | — | — | HELD |
+| RQ04 | malformed | text is a list | 400 | `—` | — | — | HELD |
+| RQ05 | malformed | text is null | 400 | `—` | — | — | HELD |
+| RQ06 | malformed | creator_id is an object | 200 | `f187d507-ee14-424f-b91f-e323095f7199` | unsure | 0.280 | BROKE |
+| RQ07 | malformed | body is a JSON array, not an object | 400 | `—` | — | — | HELD |
+| RQ08 | malformed | body is unparseable JSON | 400 | `—` | — | — | HELD |
+| RQ09 | malformed | body is empty | 400 | `—` | — | — | HELD |
+| RQ10 | malformed | body is form-encoded, not JSON | 400 | `—` | — | — | HELD |
+| RQ11 | malformed | body is JSON claiming to be plain text | 400 | `—` | — | — | HELD |
+| RQ12 | malformed | deeply nested JSON | 400 | `—` | — | — | HELD |
+| FL01_01 | flood_same_creator | 20 rapid submissions from one creator | 200 | `41202e3c-3c98-4bfa-8333-97d43404da88` | unsure | 0.280 | HELD |
+| FL01_02 | flood_same_creator | 20 rapid submissions from one creator | 200 | `c05ee837-eb63-4cfd-b502-f99e23b54949` | unsure | 0.280 | HELD |
+| FL01_03 | flood_same_creator | 20 rapid submissions from one creator | 200 | `688a6a5a-850d-4550-9c26-187afb5dc6cb` | unsure | 0.280 | HELD |
+| FL01_04 | flood_same_creator | 20 rapid submissions from one creator | 200 | `47c53093-00dc-4dcb-a46e-78c56e879895` | unsure | 0.280 | HELD |
+| FL01_05 | flood_same_creator | 20 rapid submissions from one creator | 200 | `af0e152e-e502-44fe-8bee-63fc93cdda8b` | unsure | 0.280 | HELD |
+| FL01_06 | flood_same_creator | 20 rapid submissions from one creator | 200 | `40387ad7-8dc8-4fb3-8b59-e7c512caf328` | unsure | 0.280 | HELD |
+| FL01_07 | flood_same_creator | 20 rapid submissions from one creator | 200 | `1014f1e1-1db5-41f3-aeda-5ef17c627859` | unsure | 0.280 | HELD |
+| FL01_08 | flood_same_creator | 20 rapid submissions from one creator | 200 | `759d6c52-5e57-4e7b-9898-0da10cfe1038` | unsure | 0.280 | HELD |
+| FL01_09 | flood_same_creator | 20 rapid submissions from one creator | 429 | `—` | — | — | HELD |
+| FL01_10 | flood_same_creator | 20 rapid submissions from one creator | 429 | `—` | — | — | HELD |
+| FL01_11 | flood_same_creator | 20 rapid submissions from one creator | 429 | `—` | — | — | HELD |
+| FL01_12 | flood_same_creator | 20 rapid submissions from one creator | 429 | `—` | — | — | HELD |
 
-
-
-**Ten audit log entries from the run**
-
-<!-- Choose entries that show the interesting failures, not the ten easiest. -->
+**Ten audit log entries from the run** (`EV05`, `EV09`, `FP03`, `FP04`, `FP05`, `PI02`, `MF06`, `M07`, `RQ06`, `FL01_09`)
 
 ```json
-
+{"timestamp": "2026-11-06T04:47:48+00:00", "content_id": "3a10277c-0426-49df-a398-dd4943e6076f", "creator_id": "attacker_EV05", "guess": "human", "model_score": 0.3212, "style_score": 0.37653872845679465, "combined_score": 0.3488693642283973, "label": "We think this was probably written by a person.", "status": "decided"}
+{"timestamp": "2026-11-06T04:47:49+00:00", "content_id": "1c5cc5c7-730d-4e46-ba5b-70a8c5c0e563", "creator_id": "attacker_EV09", "guess": "unsure", "model_score": 0.7042, "style_score": 0.46073113610805233, "combined_score": 0.5824655680540262, "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.", "status": "decided"}
+{"timestamp": "2026-11-06T04:47:50+00:00", "content_id": "a3b14e53-c6df-430d-aa7c-f20ee8998f5f", "creator_id": "attacker_FP03", "guess": "ai", "model_score": 0.8051, "style_score": 0.6496398516315162, "combined_score": 0.7273699258157581, "label": "This may have been written by AI. This is an estimate, not proof. If you wrote it yourself, you can appeal and a person will review it.", "status": "decided"}
+{"timestamp": "2026-11-06T04:47:50+00:00", "content_id": "3c276dde-8f8a-4a4a-800b-b00d9b1b3430", "creator_id": "attacker_FP04", "guess": "ai", "model_score": 0.8329, "style_score": 0.5836558866707483, "combined_score": 0.7082779433353741, "label": "This may have been written by AI. This is an estimate, not proof. If you wrote it yourself, you can appeal and a person will review it.", "status": "decided"}
+{"timestamp": "2026-11-06T04:47:50+00:00", "content_id": "9fc1d82f-3da3-4675-8e2c-7d9f815b456a", "creator_id": "attacker_FP05", "guess": "ai", "model_score": 0.8005, "style_score": 0.6648470364437674, "combined_score": 0.7326735182218838, "label": "This may have been written by AI. This is an estimate, not proof. If you wrote it yourself, you can appeal and a person will review it.", "status": "decided"}
+{"timestamp": "2026-11-06T04:47:51+00:00", "content_id": "692ded33-91a0-4e2f-b279-0341c1811c03", "creator_id": "attacker_PI02", "guess": "human", "model_score": 0.2044, "style_score": 0.3901290685348684, "combined_score": 0.2972645342674342, "label": "We think this was probably written by a person.", "status": "decided"}
+{"timestamp": "2026-11-06T04:47:53+00:00", "content_id": "1bd130cd-e267-4ff0-9d9a-ca531935bba8", "creator_id": "attacker_MF06", "guess": "ai", "model_score": 0.9969, "style_score": 1.0, "combined_score": 0.9984500000000001, "label": "This may have been written by AI. This is an estimate, not proof. If you wrote it yourself, you can appeal and a person will review it.", "status": "decided"}
+{"timestamp": "2026-11-06T04:47:53+00:00", "content_id": "4df24544-a879-4544-974a-c3af3ca01c27", "creator_id": "attacker_MF07", "guess": "ai", "model_score": 0.9064, "style_score": 1.0, "combined_score": 0.9532, "label": "This may have been written by AI. This is an estimate, not proof. If you wrote it yourself, you can appeal and a person will review it.", "status": "decided"}
+{"timestamp": "2026-11-06T04:47:54+00:00", "content_id": "f187d507-ee14-424f-b91f-e323095f7199", "creator_id": "unknown", "guess": "unsure", "model_score": 0.0492, "style_score": 0.6666666666666666, "combined_score": 0.36, "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.", "status": "decided"}
+{"timestamp": "2026-11-06T04:47:55+00:00", "creator_id": "attacker_flood", "event": "rejected", "status": "rejected", "reason": "rate_limited", "limit": "8 per 1 minute"}
 ```
 
-**The single worst outcome** — the one I'd least want to explain to a writer
-whose work got caught by it:
-
-
+**The single worst outcome** — the one I'd least want to explain to a writer whose work got caught by it: 
+- The single worst outcome in this attack is FP03 (false_positive), where a non-native English speaker writing carefully was falsely classified as AI with a model score of `0.8051` and assigned a label of *"This may have been written by AI. This is an estimate, not proof. If you wrote it yourself, you can appeal and a person will review it."* Explaining this outcome to a writer would be devastating because falsely accusing a real writer, especially a non-native English speaker who took extra care to write carefully, inflicts immediate personal and professional harm. Automated false accusations penalize real writers' effort, erode trust in the platform, and unfairly force the writers to need to appeal. 
 
 ---
 
