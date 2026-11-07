@@ -803,28 +803,89 @@ Criterion 2, Score Spread - Clearly-AI and clearly-human text score clearly apar
 Broken Attacks - Evasion (`EV01-EV09`), False Positive (`FP03-FP05`), Malformed (`MF02` - HTTP 500 Internal Server Error, `MF06`, `MF07`, `RQ06`):
 - Evasion Attacks (`EV01-EV09`) fails at *Signal Two - the style signal (`stylometry.py`) and the combining rule (`scoring.py::combine_signals`)*. AI-text modified with minor edits, such as adding typos, breaking up sentences, pasting quotes, etc. artificially inflates vocabulary diversity and structural variance. This causes Signal Two - the style signal to output low or neutral `style_score` values. When `scoring.py::combine_signals` averages both Signal One - the model signal and Signal Two - the style signal with equal weighting (`WEIGHT_MODEL_SIGNAL = 0.5` and `WEIGHT_STYLE_SIGNAL = 0.5`), this neutral `style_score` drags the overall combined score below 0.7 into `unsure` or `human`, allowing AI-text to evade detection. 
 - False Positive Attacks (`FP03-FP05`) fails at *Signal One - the model signal (`detector.py`) and label mapping (`scoring.py::score_to_label`)*. Authentic human writing that is formal, structured, or written carefully by a non-native English speaker generates highly predictable token sequences. This causes Signal One - the model signal to assign an artificially high `model_score` (> 0.8), which pushes the combined score past 0.7 into a false `ai` classification, misflagging real writers. 
-- Malformed Attacks (`MF02` - HTTP 500 Internal Server Error, `MF06`, `MF07`, `RQ06`) fails at *`app.py::submit`*. Input text length is not validated before passing to the next signal, causing a single character text (`MF02`) to trigger an exception and crash with an HTTP 500 Internal Server Error instead of returning a HTTP 400 Bad Request status code. Other things like emojis and RTL text distort language model token probabilities into false `ai` classifications, while passing a JSON object for `creator_id` bypasses strict type checking prior to entry. 
+- Malformed Attacks (`MF02` - HTTP 500 Internal Server Error, `MF06`, `MF07`, `RQ06`) fails at *`app.py::submit`*. Input text length is not validated before passing to the next signal, causing a single character text (`MF02`) to trigger an exception and crash with a HTTP 500 Internal Server Error instead of returning a HTTP 400 Bad Request status code. Other things like emojis and RTL text distort language model token probabilities into false `ai` classifications, while passing a JSON object for `creator_id` bypasses strict type checking prior to entry. 
 
 ---
 
 ## The Improvement
 
-**What I changed:**
+**What I changed:** Validate the input; One of the malformed input crashed my route (`MF02` - HTTP 500 Internal Server Error) with text as a single character. Therefore, I want to check the input before the signals see it. In `app.py::submit`, I set a minimum word count of 3, so any text that is fewer than `MIN_WORDS` (like single character, punctuation, etc.) it would reject the request with a HTTP 400 Bad Request status code, rather than crash the route. 
 
-**Which diagnosis pointed at it:**
+A type check on `creator_id` is added as well. A `creator_id` that is present, but the wrong type should be rejected instead of quietly logged as "unknown."
 
-### Attack Run — After
+**Which diagnosis pointed at it:** Broken Attacks - Malformed (`MF02` - HTTP 500 Internal Server Error); This is the main focus to fix the malformed input that crashed my route (it also fixes the other malformed issues listed as well). 
 
-<!-- Same format. `run_attacks.py --label after` -->
+### Attack Run & Run Log — After
+
+| ID | Family | Targeting | Status | Content ID | Guess | Score | Verdict |
+|---|---|---|---|---|---|---|---|
+| EV01 | evasion | signal two: typos raise word variety | 200 | `50740b38-e4ed-48a6-9b5b-067c5199e0a2` | unsure | 0.259 | BROKE |
+| EV02 | evasion | signal two: broken-up sentences raise length spread | 200 | `92d2614e-a8fc-4ff2-b81b-adfdcd71eb43` | unsure | 0.037 | BROKE |
+| EV03 | evasion | signal two: a pasted quotation changes the shape | 200 | `e662b798-3fac-46c2-a099-570af59680bd` | unsure | 0.153 | BROKE |
+| EV04 | evasion | signal one: unusual words raise perplexity | 200 | `9bd753a1-14f1-4f91-b991-5f1c03012d64` | unsure | 0.166 | BROKE |
+| EV05 | evasion | both signals: heavy human editing pass | 200 | `6334f7cc-df61-4658-a525-fbe4781109f0` | human | 0.302 | BROKE |
+| EV06 | evasion | signal two: one very long sentence and one very short | 200 | `649a8e0d-45d7-4ce4-aec1-585142614a0e` | unsure | 0.065 | BROKE |
+| EV07 | evasion | signal two: padding with punctuation | 200 | `06458628-25e1-474b-8839-db00b5a570f8` | unsure | 0.005 | BROKE |
+| EV08 | evasion | signal one: text below the token window | 200 | `ed5ff4bd-667e-4f14-9337-1ab80ba48adb` | unsure | 0.182 | BROKE |
+| EV09 | evasion | both: AI text with a human opening paragraph bolted on | 200 | `608d3f9b-f5d4-4b99-943d-6ecc84f55901` | unsure | 0.165 | BROKE |
+| EV10 | evasion | signal two: repeated stanza structure | 200 | `68f392eb-cb4a-495a-8cc9-ead48580eb46` | ai | 0.741 | HELD |
+| FP01 | false_positive | plain, clear human writing with no flourishes | 200 | `56fa7d26-ae41-4177-8d4f-8ba8577879b7` | unsure | 0.199 | HELD |
+| FP02 | false_positive | human writing in a formal register | 200 | `fcaed47f-699e-4e55-9c16-98c9fd03377e` | unsure | 0.400 | HELD |
+| FP03 | false_positive | a non-native English speaker writing carefully | 200 | `461f88af-a295-4f6d-9a28-6e8bf051f212` | ai | 0.455 | BROKE |
+| FP04 | false_positive | a student essay written to a rubric | 200 | `a2d851b7-9e91-441d-937f-7974d9ba1a4c` | ai | 0.417 | BROKE |
+| FP05 | false_positive | technical documentation written by a person | 200 | `8facc0d3-ab07-4129-805f-b3c5bb8e385e` | ai | 0.465 | BROKE |
+| FP06 | false_positive | a person imitating a formal template | 200 | `92d0f448-17e4-4b73-90ab-2a51da274604` | unsure | 0.380 | HELD |
+| FP07 | false_positive | human writing that repeats a phrase deliberately | 200 | `75e74e06-d36a-49d0-98e5-c60f1b5ba431` | unsure | 0.380 | HELD |
+| FP08 | false_positive | very short genuine human submission | 200 | `5dd97ad6-433a-4b43-b249-99934d073b7a` | unsure | 0.155 | HELD |
+| PI01 | prompt_injection | instruction to ignore the check | 200 | `40ca9759-1977-4531-a5ef-906feab965c8` | unsure | 0.070 | HELD |
+| PI02 | prompt_injection | instruction disguised as a system message | 200 | `ad24f4a3-f300-465d-917b-041812e33407` | human | 0.406 | BROKE |
+| PI03 | prompt_injection | instruction wrapped in the writer's voice | 200 | `7ace099f-4a2c-45c5-8208-95c22eb30501` | unsure | 0.086 | HELD |
+| PI04 | prompt_injection | attempt to make the label text hostile | 200 | `34820925-afc0-41ca-8ecb-af7fddb7bbcb` | unsure | 0.051 | HELD |
+| PI05 | prompt_injection | attempt to inject into the audit log | 200 | `985f2252-4584-42cc-ae66-c7271b88f4b7` | unsure | 0.173 | HELD |
+| PI06 | prompt_injection | instruction plus real human text | 200 | `dce0ec58-dcae-4855-a8c7-98ef12785f47` | unsure | 0.137 | HELD |
+| MF01 | malformed | text is only whitespace | 400 | `—` | — | — | HELD |
+| MF02 | malformed | text is a single character | 400 | `—` | — | — | HELD |
+| MF03 | malformed | text is control characters | 200 | `e014b6b8-6d2a-40d5-9535-26d02c23030c` | unsure | 0.280 | HELD |
+| MF04 | malformed | text is only punctuation | 400 | `—` | — | — | HELD |
+| MF05 | malformed | text is a very long single word | 400 | `—` | — | — | HELD |
+| MF06 | malformed | text is emoji only | 400 | `—` | — | — | HELD |
+| MF07 | malformed | text is right-to-left script | 400 | `—` | — | — | HELD |
+| MF08 | malformed | text is 60,000 characters | 200 | `5737206b-8f62-4fa2-b18c-5d58012b562b` | unsure | 0.380 | HELD |
+| RQ01 | malformed | no text field at all | 400 | `—` | — | — | HELD |
+| RQ02 | malformed | no creator_id | 200 | `62174e15-89c7-4e06-8dd3-1218308d3ffb` | unsure | 0.094 | HELD |
+| RQ03 | malformed | text is a number | 400 | `—` | — | — | HELD |
+| RQ04 | malformed | text is a list | 400 | `—` | — | — | HELD |
+| RQ05 | malformed | text is null | 400 | `—` | — | — | HELD |
+| RQ06 | malformed | creator_id is an object | 400 | `—` | — | — | HELD |
+| RQ07 | malformed | body is a JSON array, not an object | 400 | `—` | — | — | HELD |
+| RQ08 | malformed | body is unparseable JSON | 400 | `—` | — | — | HELD |
+| RQ09 | malformed | body is empty | 400 | `—` | — | — | HELD |
+| RQ10 | malformed | body is form-encoded, not JSON | 400 | `—` | — | — | HELD |
+| RQ11 | malformed | body is JSON claiming to be plain text | 400 | `—` | — | — | HELD |
+| RQ12 | malformed | deeply nested JSON | 400 | `—` | — | — | HELD |
+| FL01_01 | flood_same_creator | 20 rapid submissions from one creator | 200 | `0c88752b-48d0-4483-af03-c4dec205d46c` | unsure | 0.280 | HELD |
+| FL01_02 | flood_same_creator | 20 rapid submissions from one creator | 200 | `cf9debbe-3941-40f0-9224-8951a0651a47` | unsure | 0.280 | HELD |
+| FL01_03 | flood_same_creator | 20 rapid submissions from one creator | 200 | `445047af-7c40-4d5f-a63f-55d435c02af0` | unsure | 0.280 | HELD |
+| FL01_04 | flood_same_creator | 20 rapid submissions from one creator | 200 | `282d9ed4-7422-4483-8fd8-3596c847d475` | unsure | 0.280 | HELD |
+| FL01_05 | flood_same_creator | 20 rapid submissions from one creator | 200 | `2c7f13a8-34a0-4b88-9b22-e5ea125b30ca` | unsure | 0.280 | HELD |
+| FL01_06 | flood_same_creator | 20 rapid submissions from one creator | 200 | `c36ecb14-26cb-443a-b94a-7d7ee236d8c5` | unsure | 0.280 | HELD |
+| FL01_07 | flood_same_creator | 20 rapid submissions from one creator | 200 | `7f81ddb5-1e14-4cb1-af89-0f5f63a1bc24` | unsure | 0.280 | HELD |
+| FL01_08 | flood_same_creator | 20 rapid submissions from one creator | 200 | `aea4f842-66f0-4b27-98c4-7d775698675c` | unsure | 0.280 | HELD |
+| FL01_09 | flood_same_creator | 20 rapid submissions from one creator | 429 | `—` | — | — | HELD |
+| FL01_10 | flood_same_creator | 20 rapid submissions from one creator | 429 | `—` | — | — | HELD |
+| FL01_11 | flood_same_creator | 20 rapid submissions from one creator | 429 | `—` | — | — | HELD |
+| FL01_12 | flood_same_creator | 20 rapid submissions from one creator | 429 | `—` | — | — | HELD |
 
 
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict | 
+|---|---|---|---|---|---|
+| 1. Real writers are almost never falsely flagged as AI | ≤ 1 of 10 | 0/10 | 0/10 | 0/10 | MET | 
+| 2. Clearly-AI and clearly-human text score clearly apart | gap ≥ 0.3 | 0.105 | 0.105 | 0.105 | MISSED |
+| 3. Every label (`high-confidence AI`, `high-confidence human`, `unsure`) is reachable | each label ≥ 2 of 15 | 3 `ai`, 3 `human`, 9 `unsure` | 3 `ai`, 3 `human`, 9 `unsure` | 3 `ai`, 3 `human`, 9 `unsure` | MET |
+| 4. Appeals always change status and are recorded | 10 of 10 | 10/10 | 10/10 | 10/10 | MET |
+| 5. Missing, empty, or enormous texts are handled explicitly | 10 of 10 | 10/10 | 10/10 | 10/10 | MET |
 
-**Did it help, and how do I know:**
-
-<!-- Widening the unsure band usually fixes one problem and creates another.
-     Reporting that trade honestly is worth full credit. -->
-
-
+**Did it help, and how do I know:** Yes, it helped resolve the malformed attacks that were `BROKE` to now `HELD`. The malformed attack (`MF02` - text is a single character) changed from triggering a HTTP 500 Internal Server Error (Verdict: `BROKE`) to returning a HTTP 400 Bad Request (Verdict: `HELD`). This prevents the server from crashing on short texts. The other malformed attacks are also now (`HELD`) instead of trying to label it as `ai`, `human`, or `unsure` when the text only has emojis or a different language text. In addition, checking the type for `creator_id` now returns a HTTP 400 Bad Request instead of bypassing type checks. This improvement validates the input before the signals see it. 
 
 ---
 

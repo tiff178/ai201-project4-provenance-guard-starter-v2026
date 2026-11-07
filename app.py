@@ -34,6 +34,8 @@ import config
 import stylometry
 import scoring
 
+MIN_WORDS = 3
+
 app = Flask(__name__)
 
 
@@ -211,6 +213,12 @@ def submit():
     text = payload.get("text")
     creator_id = payload.get("creator_id")
 
+    # creator_id that is present but the wrong type (an object, a list, a number) is a malformed request
+    # reject it instead of quietly logging the writer as "unknown"; missing or blank creator_id is still allowed.
+    if creator_id is not None and not isinstance(creator_id, str):
+        audit.log_rejection(creator_id="unknown", reason="invalid_creator_id")
+        return jsonify({"error": "invalid_creator_id", "message": "`creator_id` must be a string"}), 400
+
     if not isinstance(creator_id, str) or not creator_id.strip():
         creator_id = "unknown"
 
@@ -218,9 +226,24 @@ def submit():
         audit.log_rejection(creator_id=creator_id, reason="missing_or_empty_text")
         return jsonify({"error": "invalid_text", "message": "`text` must be a non-empty string"}), 400
 
-    content_id = str(uuid.uuid4())
+    # text with fewer than MIN_WORDS (a single character, punctuation only, etc. cannot be scored)
+    if len(stylometry.words(text)) < MIN_WORDS:
+        audit.log_rejection(creator_id=creator_id, reason="too_few_words")
+        return jsonify({
+            "error": "text_too_short",
+            "message": f"`text` needs at least {MIN_WORDS} English words to be assessed",
+        }), 400
 
-    model_score = detector.model_signal(text)
+    content_id = str(uuid.uuid4()) 
+
+    try:
+        model_score = detector.model_signal(text)
+    except ValueError as exc:
+        # Backstop: the detector refuses text it can't tokenize into enough
+        # pieces. That is bad input, not a server fault.
+        audit.log_rejection(creator_id=creator_id, reason="unscorable_text")
+        return jsonify({"error": "text_unscorable", "message": str(exc)}), 400
+
     style_score = stylometry.style_signal(text)
     combined_score = scoring.combine_signals(model_score, style_score)
     guess, label = scoring.score_to_label(combined_score)
