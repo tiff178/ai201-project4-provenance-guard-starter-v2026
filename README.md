@@ -161,7 +161,7 @@ $ curl "http://127.0.0.1:5000/log?limit=3"
 
 ---
 
-## Stretch Features
+## Stretch Features - Unit 7
 `GET /content/<id>`: endpoint that returns one item's current status (`app.py:get_content`)
 
 **An item's current status**
@@ -200,6 +200,12 @@ $ curl "http://127.0.0.1:5000/content/c01e5c56-f341-4e2b-9309-21b3c55d3f1c"
 - *What I asked for:* A clearly-AI text from Claude that will then be used for appeal.
 - *What came back:* A clearly-AI text to be used on submission and appeal. 
 - *What I changed:* Had to test a few different prompts with Claude to get a stronger clearly-AI text as the ones I was trying to generate fell under `unsure` more often. 
+
+**Moment 3**
+
+- *What I asked for:* More clearly-AI text from Claude/ChatGPT for `scenarios.py`.
+- *What came back:* More clearly-AI text.
+- *What I changed:* Tested different prompts with Claude and ChatGPT for clearly-AI text for `scenarios.py`. The clearly-AI text is used in score spread and label coverage. 
 
 ---
 
@@ -880,7 +886,7 @@ A type check on `creator_id` is added as well. A `creator_id` that is present, b
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict | 
 |---|---|---|---|---|---|
 | 1. Real writers are almost never falsely flagged as AI | ≤ 1 of 10 | 0/10 | 0/10 | 0/10 | MET | 
-| 2. Clearly-AI and clearly-human text score clearly apart | gap ≥ 0.3 | 0.105 | 0.105 | 0.105 | MISSED |
+| 2. Clearly-AI and clearly-human text score clearly apart | gap ≥ 0.3 | 0.102 | 0.102 | 0.102 | MISSED |
 | 3. Every label (`high-confidence AI`, `high-confidence human`, `unsure`) is reachable | each label ≥ 2 of 15 | 3 `ai`, 3 `human`, 9 `unsure` | 3 `ai`, 3 `human`, 9 `unsure` | 3 `ai`, 3 `human`, 9 `unsure` | MET |
 | 4. Appeals always change status and are recorded | 10 of 10 | 10/10 | 10/10 | 10/10 | MET |
 | 5. Missing, empty, or enormous texts are handled explicitly | 10 of 10 | 10/10 | 10/10 | 10/10 | MET |
@@ -889,52 +895,97 @@ A type check on `creator_id` is added as well. A `creator_id` that is present, b
 
 ---
 
+## Stretch Features: Second Improvement - Unit 8 
+
+**What I changed:** Move a threshold; Increased `AI_THRESHOLD` from 0.7 to 0.73 in `config.py`, widening the `unsure` band from 0.35-0.7 to 0.35-0.73
+
+**Which diagnosis pointed at it:** Broken Attacks - False Positives (`FP03-FP05`) were classified as `ai` even though it was clearly written by real writers. Formal, structured, and carefully written texts by a non-native English speaker were misclassified as `ai`. Adjusting the `AI_THRESHOLD` slightly should reduce the misclassification. 
+
+### Attack Run & Run Log — After (Second Improvement)
+
+| ID | Family | Targeting | Status | Content ID | Guess | Score | Verdict |
+|---|---|---|---|---|---|---|---|
+| EV01 | evasion | signal two: typos raise word variety | 200 | `5da514b6-16a9-4103-a678-d212d999a576` | unsure | 0.259 | BROKE |
+| EV02 | evasion | signal two: broken-up sentences raise length spread | 200 | `0f194004-9986-4787-a1e8-ee6b5a52d960` | unsure | 0.037 | BROKE |
+| EV03 | evasion | signal two: a pasted quotation changes the shape | 200 | `4dc7803e-0a28-4df6-a38e-ba2605bdba36` | unsure | 0.153 | BROKE |
+| EV04 | evasion | signal one: unusual words raise perplexity | 200 | `f95e83c4-b0e1-48d0-8b96-e53898bbbe98` | unsure | 0.166 | BROKE |
+| EV05 | evasion | both signals: heavy human editing pass | 200 | `8005d1f9-5ac4-43e3-b09b-69c7d9e7d333` | human | 0.302 | BROKE |
+| EV06 | evasion | signal two: one very long sentence and one very short | 200 | `2e0b45f5-43b7-45f3-9e3f-c80081de6bc6` | unsure | 0.065 | BROKE |
+| EV07 | evasion | signal two: padding with punctuation | 200 | `f8a4456c-2758-47d3-af75-1fb2a9d42e2d` | unsure | 0.005 | BROKE |
+| EV08 | evasion | signal one: text below the token window | 200 | `1fcd6da3-395c-49c7-a035-59c2bcbbb5ef` | unsure | 0.182 | BROKE |
+| EV09 | evasion | both: AI text with a human opening paragraph bolted on | 200 | `0c8a1267-3fa5-40b6-ab7f-ebbe993ddab7` | unsure | 0.165 | BROKE |
+| EV10 | evasion | signal two: repeated stanza structure | 200 | `fd95bea0-672e-4e84-850d-8b0b8ec3b823` | ai | 0.741 | HELD |
+| FP01 | false_positive | plain, clear human writing with no flourishes | 200 | `d9e7ba9d-9e56-4bc2-8a49-0e5984618f17` | unsure | 0.199 | HELD |
+| FP02 | false_positive | human writing in a formal register | 200 | `6f5f934b-6216-450b-beb1-687c0f8b4f6d` | unsure | 0.400 | HELD |
+| FP03 | false_positive | a non-native English speaker writing carefully | 200 | `fcafe4f1-b62d-40fb-ab6a-7dd1668b19af` | unsure | 0.455 | HELD |
+| FP04 | false_positive | a student essay written to a rubric | 200 | `532ff9f2-a141-4999-85b0-ec93d8c9bf95` | unsure | 0.417 | HELD |
+| FP05 | false_positive | technical documentation written by a person | 200 | `e55a4a1b-9611-42d2-bf5d-a17dd71ae573` | ai | 0.465 | BROKE |
+| FP06 | false_positive | a person imitating a formal template | 200 | `69a0ddab-7e33-40aa-bd5e-8ee9dbf2523b` | unsure | 0.438 | HELD |
+| FP07 | false_positive | human writing that repeats a phrase deliberately | 200 | `e79bfd66-9814-4068-9834-0596ad38df6b` | unsure | 0.429 | HELD |
+| FP08 | false_positive | very short genuine human submission | 200 | `43ba46d9-8d59-483c-ac23-0bf8274e3f22` | unsure | 0.155 | HELD |
+| PI01 | prompt_injection | instruction to ignore the check | 200 | `91cb53eb-5341-419b-973e-ba0e1313a591` | unsure | 0.070 | HELD |
+| PI02 | prompt_injection | instruction disguised as a system message | 200 | `4b93aa3c-8e57-4225-93a7-3f74496cd620` | human | 0.406 | BROKE |
+| PI03 | prompt_injection | instruction wrapped in the writer's voice | 200 | `7e7bea26-4716-452a-bb2e-da0abeb82933` | unsure | 0.086 | HELD |
+| PI04 | prompt_injection | attempt to make the label text hostile | 200 | `22901c5c-ba50-4701-83fc-0a5de4f2847b` | unsure | 0.051 | HELD |
+| PI05 | prompt_injection | attempt to inject into the audit log | 200 | `2a4a9a89-338b-4d98-a7c5-f98d825b08dd` | unsure | 0.173 | HELD |
+| PI06 | prompt_injection | instruction plus real human text | 200 | `11566591-16f3-4ff0-b7d7-b8a7fcb40863` | unsure | 0.137 | HELD |
+| MF01 | malformed | text is only whitespace | 400 | `—` | — | — | HELD |
+| MF02 | malformed | text is a single character | 400 | `—` | — | — | HELD |
+| MF03 | malformed | text is control characters | 200 | `36a7d1bf-5e09-4ace-a160-0956a677f1b7` | unsure | 0.280 | HELD |
+| MF04 | malformed | text is only punctuation | 400 | `—` | — | — | HELD |
+| MF05 | malformed | text is a very long single word | 400 | `—` | — | — | HELD |
+| MF06 | malformed | text is emoji only | 400 | `—` | — | — | HELD |
+| MF07 | malformed | text is right-to-left script | 400 | `—` | — | — | HELD |
+| MF08 | malformed | text is 60,000 characters | 200 | `9552b5ed-c7a7-49ab-9b46-b5988bb6ffe3` | unsure | 0.440 | HELD |
+| RQ01 | malformed | no text field at all | 400 | `—` | — | — | HELD |
+| RQ02 | malformed | no creator_id | 200 | `4a53d0ec-3d4e-41ee-860e-1a398c1735c0` | unsure | 0.094 | HELD |
+| RQ03 | malformed | text is a number | 400 | `—` | — | — | HELD |
+| RQ04 | malformed | text is a list | 400 | `—` | — | — | HELD |
+| RQ05 | malformed | text is null | 400 | `—` | — | — | HELD |
+| RQ06 | malformed | creator_id is an object | 400 | `—` | — | — | HELD |
+| RQ07 | malformed | body is a JSON array, not an object | 400 | `—` | — | — | HELD |
+| RQ08 | malformed | body is unparseable JSON | 400 | `—` | — | — | HELD |
+| RQ09 | malformed | body is empty | 400 | `—` | — | — | HELD |
+| RQ10 | malformed | body is form-encoded, not JSON | 400 | `—` | — | — | HELD |
+| RQ11 | malformed | body is JSON claiming to be plain text | 400 | `—` | — | — | HELD |
+| RQ12 | malformed | deeply nested JSON | 400 | `—` | — | — | HELD |
+| FL01_01 | flood_same_creator | 20 rapid submissions from one creator | 200 | `e4424729-6332-49d9-965b-3174773ab368` | unsure | 0.280 | HELD |
+| FL01_02 | flood_same_creator | 20 rapid submissions from one creator | 200 | `d2fa97db-d116-4de8-9348-0df8e994cff1` | unsure | 0.280 | HELD |
+| FL01_03 | flood_same_creator | 20 rapid submissions from one creator | 200 | `1f5f87d5-77ab-4d29-9624-f0a6b83ba407` | unsure | 0.280 | HELD |
+| FL01_04 | flood_same_creator | 20 rapid submissions from one creator | 200 | `5b9ec270-8044-4676-a000-40ac3ce1f6a3` | unsure | 0.280 | HELD |
+| FL01_05 | flood_same_creator | 20 rapid submissions from one creator | 200 | `73fdc669-f632-43ee-98cc-4fdaa4b0eb60` | unsure | 0.280 | HELD |
+| FL01_06 | flood_same_creator | 20 rapid submissions from one creator | 200 | `4dc2feb0-a04e-467f-bb76-190ff255aff8` | unsure | 0.280 | HELD |
+| FL01_07 | flood_same_creator | 20 rapid submissions from one creator | 200 | `0fa7b451-682b-4dd1-a515-0aea0ba18103` | unsure | 0.280 | HELD |
+| FL01_08 | flood_same_creator | 20 rapid submissions from one creator | 200 | `9d8defe5-dfe4-4cc9-ba91-770db51f032c` | unsure | 0.280 | HELD |
+| FL01_09 | flood_same_creator | 20 rapid submissions from one creator | 429 | `—` | — | — | HELD |
+| FL01_10 | flood_same_creator | 20 rapid submissions from one creator | 429 | `—` | — | — | HELD |
+| FL01_11 | flood_same_creator | 20 rapid submissions from one creator | 429 | `—` | — | — | HELD |
+| FL01_12 | flood_same_creator | 20 rapid submissions from one creator | 429 | `—` | — | — | HELD |
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict | 
+|---|---|---|---|---|---|
+| 1. Real writers are almost never falsely flagged as AI | ≤ 1 of 10 | 0/10 | 0/10 | 0/10 | MET | 
+| 2. Clearly-AI and clearly-human text score clearly apart | gap ≥ 0.3 | 0.102 | 0.102 | 0.102 | MISSED |
+| 3. Every label (`high-confidence AI`, `high-confidence human`, `unsure`) is reachable | each label ≥ 2 of 15 | 3 `ai`, 3 `human`, 9 `unsure` | 3 `ai`, 3 `human`, 9 `unsure` | 3 `ai`, 3 `human`, 9 `unsure` | MET |
+| 4. Appeals always change status and are recorded | 10 of 10 | 10/10 | 10/10 | 10/10 | MET |
+| 5. Missing, empty, or enormous texts are handled explicitly | 10 of 10 | 10/10 | 10/10 | 10/10 | MET |
+
+**Did it help, and how do I know:** Yes, it helped resolve two false positives (`FP03` - a non-native English speaker writing carefully and `FP04` - a student essay written to a rubric) to `unsure` instead of `ai`. It did not resolve one of the positives (`FP05` - technical documentation written by a person). Reducing the number of false positives is crucial because we don't want to falsely accuse real writers that their work is AI. Adjusting the threshold (widening the `unsure` gap) did help a bit. It resolved the single worst outcome, which is a non-native English speaker writing carefully. An `unsure` outcome (not a false positive) is an honest admission of the system uncertainty rather than a false accusation, so it does not penalize the author.
+
+---
+
 ## What's Still Broken
 
-<!-- For each attack still getting through and each criterion still missed:
-     what you'd do, and why you stopped. -->
+Criterion 2, Score Spread — Clearly-AI and clearly-human text score clearly apart (MISSED, 0.102 against a 0.3 target): 
+- Implementing dynamic length weighting in `scoring.py::combine_signals` or testing out the weights for the model and style signal to see any changes. 
+- I prioritized eliminating server crashes first, refactoring `stylometry.py` would take more time, so I stopped here. 
+
+Broken Attacks - Evasion (`EV01-EV09`), False Positive (`FP05`):
+- For evasion attacks, I would introduce adversarial text normalization (stripping inserted typos, quotes, and artificial line breaks) prior to stylometric calculation, preventing minor edits from artificially inflating style_score. For false positives, I would calibrate `detector.py` for formal, repetitive, or technical registers by introducing domain-aware perplexity scaling so structured/formal technical writing isn't misflagged. 
+- Adjusting the thresholds further risks introducing false positives, so I stopped here. 
 
 
-
-**The trade I'd make if this ran for real:**
-
-<!-- Two sentences. Fewer wrong accusations means more AI text getting through.
-     Say which way you'd go and WHO PAYS FOR IT. -->
-
-
-
-<!-- ═════════════════════════════════════════════════════════════════════
-
-     SUBMISSION CHECKLIST — unit 7
-
-       [ ] criteria.md has five numbered criteria, each naming a target
-       [ ] Each has a reason underneath
-       [ ] POST /submit returns content_id, guess, confidence, label,
-           model_score and style_score
-       [ ] Two signals that measure DIFFERENT things, each with a named blind spot
-       [ ] Three label variants, all reachable, written out in full
-       [ ] POST /appeal changes status and writes to the log
-       [ ] Signals and Scoring names scoring.py::combine_signals
-       [ ] Sample Run: a submission AND an appeal, as pasted text
-       [ ] At least four new commits
-       [ ] Repository URL submitted — WRITE IT DOWN
-
-     SUBMISSION CHECKLIST — unit 8
-
-       [ ] Rate limiting on /submit, with your numbers justified
-       [ ] The pasted run of status codes showing 429
-       [ ] Audit log with all nine fields, recording rejections too
-       [ ] The attack set run IN FULL, every input with an outcome
-       [ ] Ten audit log entries pasted as text
-       [ ] Five criteria across three trials
-       [ ] A diagnosis for every miss and every broken attack — stage AND mechanism
-       [ ] One improvement, with Attack Run — After
-       [ ] What's Still Broken, including the production trade
-       [ ] At least four new commits
-       [ ] The SAME repository URL as last unit
-
-     Do not delete and recreate this repository.
-     ═════════════════════════════════════════════════════════════════════ -->
+**The trade I'd make if this ran for real:** I would trade lower AI detection sensitivity in order to strictly prevent wrongful false accusations (false positives) against real human writers. Undetected AI text is a minor operational nuisance, but falsely flagging genuine human work inflicts immediate personal harm and destroys user trust, making real writers pay the price if the system leans too aggressively toward detection.
 
 ---
 
