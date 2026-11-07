@@ -327,21 +327,464 @@ The first one is slow while the model loads.
 
 ## Run Log and Verdicts
 
-<!-- Your five criteria across three trials. `run_eval.py --label before`. -->
-
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |
+| 1. Real writers are almost never falsely flagged as AI | ≤ 1 of 10 | 0/10 | 0/10 | 0/10 | MET |
+| 2. Clearly-AI and clearly-human text score clearly apart | gap ≥ 0.3 | 0.099 | 0.099 | 0.099 | MISSED |
+| 3. Every label (`high-confidence AI`, `high-confidence human`, `unsure`) is reachable | each label ≥ 2 of 15 | 3 `ai`, 3 `human`, 9 `unsure` | 3 `ai`, 3 `human`, 9 `unsure` | 3 `ai`, 3 `human`, 9 `unsure` | MET |
+| 4. Appeals always change status and are recorded | 10 of 10 | 10/10 | 10/10 | 10/10 | MET |
+| 5. Missing, empty, or enormous texts are handled explicitly | 10 of 10 | 10/10 | 10/10 | 10/10 | MET |
 
-**Real output from one trial**, pasted as text, naming the file and function
-that produced it:
+**Real output from one trial**
+
+Criterion 1, Trial 1: false positives (`run_eval.py::main`)
 
 ```json
+[
+  {
+    "status": 200,
+    "guess": "human",
+    "confidence": 0.3406,
+    "model_score": 0.2756,
+    "style_score": 0.3838239541920477,
+    "label": "We think this was probably written by a person.",
+    "sent": "No way! You did an amazing job presenting your speech."
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.2163,
+    "model_score": 0.7242,
+    "style_score": 0.4920634920634921,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "What is your favorite artist/group to listen to on a daily basis? Mine"
+  },
+  {
+    "status": 200,
+    "guess": "human",
+    "confidence": 0.4258,
+    "model_score": 0.2122,
+    "style_score": 0.3620460048460248,
+    "label": "We think this was probably written by a person.",
+    "sent": "guess what? I passed my Microsoft Azure AI Fundamentals exam recently!"
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.116,
+    "model_score": 0.685,
+    "style_score": 0.43096440627115085,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "I'm not ready for this midterm coming up... I still have a lot to stud"
+  },
+  {
+    "status": 200,
+    "guess": "human",
+    "confidence": 0.4204,
+    "model_score": 0.2257,
+    "style_score": 0.3539132127639541,
+    "label": "We think this was probably written by a person.",
+    "sent": "What classes are you planning to take next semester? I'm thinking to t"
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.3143,
+    "model_score": 0.7214,
+    "style_score": 0.5928744485996313,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "Have you tried this new cafe/matcha spot? I seen it all over my Instag"
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.2796,
+    "model_score": 0.855,
+    "style_score": 0.4246214726356949,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "Congrats! Can't wait to see what's in store for you in the future! I k"
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.1847,
+    "model_score": 0.8543,
+    "style_score": 0.3303721745056052,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "AI and Machine Learning is such a huge topic in the industry right now"
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.0784,
+    "model_score": 0.6528,
+    "style_score": 0.4256027539194693,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "made some cantonese style egg tarts today, turned out really good! it'"
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.2118,
+    "model_score": 0.7157,
+    "style_score": 0.49613833857367334,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "I need some advice on what certification to study next that will be be"
+  }
+]
+```
 
+Criterion 2, Trial 1: score spread (`run_eval.py::main`)
+
+```json
+[
+  {
+    "status": 200,
+    "guess": "ai",
+    "confidence": 0.6809,
+    "model_score": 0.9426,
+    "style_score": 0.7382971314272938,
+    "label": "This may have been written by AI. This is an estimate, not proof. If you wrote it yourself, you can appeal and a person will review it.",
+    "sent": "Artificial intelligence is a powerful technology that is changing the "
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.2662,
+    "model_score": 0.8093,
+    "style_score": 0.4568809791713669,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "Many people see failure as something to avoid, but it is often one of "
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.2478,
+    "model_score": 0.7766,
+    "style_score": 0.4712197736877021,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "Choosing to be patient when things don't go our way, learning from mis"
+  },
+  {
+    "status": 200,
+    "guess": "ai",
+    "confidence": 0.479,
+    "model_score": 0.8492,
+    "style_score": 0.6297771471740042,
+    "label": "This may have been written by AI. This is an estimate, not proof. If you wrote it yourself, you can appeal and a person will review it.",
+    "sent": "This product is a great choice for anyone who wants a reliable and aff"
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.38,
+    "model_score": 0.8709,
+    "style_score": 0.5243186680009541,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "As we grow older, we begin to realize that friendship isn't about how "
+  },
+  {
+    "status": 200,
+    "guess": "human",
+    "confidence": 0.3406,
+    "model_score": 0.2756,
+    "style_score": 0.3838239541920477,
+    "label": "We think this was probably written by a person.",
+    "sent": "No way! You did an amazing job presenting your speech."
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.2163,
+    "model_score": 0.7242,
+    "style_score": 0.4920634920634921,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "What is your favorite artist/group to listen to on a daily basis? Mine"
+  },
+  {
+    "status": 200,
+    "guess": "human",
+    "confidence": 0.4678,
+    "model_score": 0.1702,
+    "style_score": 0.3620460048460248,
+    "label": "We think this was probably written by a person.",
+    "sent": "guess what? I passed my Microsoft Azure AI Fundamentals exam recently!"
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.116,
+    "model_score": 0.685,
+    "style_score": 0.43096440627115085,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "I'm not ready for this midterm coming up... I still have a lot to stud"
+  },
+  {
+    "status": 200,
+    "guess": "human",
+    "confidence": 0.4204,
+    "model_score": 0.2257,
+    "style_score": 0.3539132127639541,
+    "label": "We think this was probably written by a person.",
+    "sent": "What classes are you planning to take next semester? I'm thinking to t"
+  }
+]
+```
+
+Criterion 3, Trial 1: label coverage (`run_eval.py::main`)
+
+```json
+[
+  {
+    "status": 200,
+    "guess": "ai",
+    "confidence": 0.6809,
+    "model_score": 0.9426,
+    "style_score": 0.7382971314272938,
+    "label": "This may have been written by AI. This is an estimate, not proof. If you wrote it yourself, you can appeal and a person will review it.",
+    "sent": "Artificial intelligence is a powerful technology that is changing the "
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.2662,
+    "model_score": 0.8093,
+    "style_score": 0.4568809791713669,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "Many people see failure as something to avoid, but it is often one of "
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.2478,
+    "model_score": 0.7766,
+    "style_score": 0.4712197736877021,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "Choosing to be patient when things don't go our way, learning from mis"
+  },
+  {
+    "status": 200,
+    "guess": "ai",
+    "confidence": 0.479,
+    "model_score": 0.8492,
+    "style_score": 0.6297771471740042,
+    "label": "This may have been written by AI. This is an estimate, not proof. If you wrote it yourself, you can appeal and a person will review it.",
+    "sent": "This product is a great choice for anyone who wants a reliable and aff"
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.38,
+    "model_score": 0.8709,
+    "style_score": 0.5243186680009541,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "As we grow older, we begin to realize that friendship isn't about how "
+  },
+  {
+    "status": 200,
+    "guess": "human",
+    "confidence": 0.3406,
+    "model_score": 0.2756,
+    "style_score": 0.3838239541920477,
+    "label": "We think this was probably written by a person.",
+    "sent": "No way! You did an amazing job presenting your speech."
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.2163,
+    "model_score": 0.7242,
+    "style_score": 0.4920634920634921,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "What is your favorite artist/group to listen to on a daily basis? Mine"
+  },
+  {
+    "status": 200,
+    "guess": "human",
+    "confidence": 0.4678,
+    "model_score": 0.1702,
+    "style_score": 0.3620460048460248,
+    "label": "We think this was probably written by a person.",
+    "sent": "guess what? I passed my Microsoft Azure AI Fundamentals exam recently!"
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.116,
+    "model_score": 0.685,
+    "style_score": 0.43096440627115085,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "I'm not ready for this midterm coming up... I still have a lot to stud"
+  },
+  {
+    "status": 200,
+    "guess": "human",
+    "confidence": 0.4204,
+    "model_score": 0.2257,
+    "style_score": 0.3539132127639541,
+    "label": "We think this was probably written by a person.",
+    "sent": "What classes are you planning to take next semester? I'm thinking to t"
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.38,
+    "model_score": 0.8795,
+    "style_score": 0.5111895353426398,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "So glad we got to work together! It's been a wonderful learning experi"
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.3216,
+    "model_score": 0.7929,
+    "style_score": 0.5287356321839081,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "When presenting analytical findings, it's important to consider potent"
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.0597,
+    "model_score": 0.5337,
+    "style_score": 0.4065886153043685,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "No way, you got to see them live?! They're my favorite artist! I wish "
+  },
+  {
+    "status": 200,
+    "guess": "ai",
+    "confidence": 0.4784,
+    "model_score": 0.8246,
+    "style_score": 0.6538461538461539,
+    "label": "This may have been written by AI. This is an estimate, not proof. If you wrote it yourself, you can appeal and a person will review it.",
+    "sent": "To better understand how natural language processing works, it's helpf"
+  },
+  {
+    "status": 200,
+    "guess": "unsure",
+    "confidence": 0.28,
+    "model_score": 0.1398,
+    "style_score": 0.5777777777777778,
+    "label": "We can't tell whether this was written by a person or by AI. Nothing is being assumed about you or your work.",
+    "sent": "I sit alone in complete solitude, wising to myself that I had a little"
+  }
+]
+```
+
+Criterion 4: the appeal path (`app.py::appeal`) 
+- The criterion for the appeal path can't be tested by sending text alone as it needs a submission first and then an appeal against `content_id` that came back. This is manually tested, 10 submitted appeals - the output below is an example. 
+
+```bash
+$ curl -X POST http://127.0.0.1:5000/appeal \
+  -H "Content-Type: application/json" \
+  -d '{"content_id": "fe33d05f-e627-4207-bf0b-a8c7df1ecae2", "reasoning": "I wrote this myself for my NLP class assignment."}'
+```
+
+```json
+{
+  "content_id": "fe33d05f-e627-4207-bf0b-a8c7df1ecae2",
+  "message": "Your appeal has been recorded and the decision is now under review.",
+  "status": "under_review"
+}
+```
+
+Criterion 5, Trial 1: bad input (`run_eval.py::main`)
+
+```json
+[
+  {
+    "status": 400,
+    "guess": null,
+    "confidence": null,
+    "model_score": null,
+    "style_score": null,
+    "label": null,
+    "sent": "{\"text\": {\"text\": \"\", \"creator_id\": \"eval_bad_empty\"}, \"creator_id\": \"eval_bad input_1\"}"
+  },
+  {
+    "status": 400,
+    "guess": null,
+    "confidence": null,
+    "model_score": null,
+    "style_score": null,
+    "label": null,
+    "sent": "{\"text\": {\"text\": \"   \", \"creator_id\": \"eval_bad_whitespace\"}, \"creator_id\": \"eval_bad input_2\"}"
+  },
+  {
+    "status": 400,
+    "guess": null,
+    "confidence": null,
+    "model_score": null,
+    "style_score": null,
+    "label": null,
+    "sent": "{\"text\": {\"text\": null, \"creator_id\": \"eval_bad_null\"}, \"creator_id\": \"eval_bad input_3\"}"
+  },
+  {
+    "status": 400,
+    "guess": null,
+    "confidence": null,
+    "model_score": null,
+    "style_score": null,
+    "label": null,
+    "sent": "{\"text\": {\"creator_id\": \"eval_bad_missing\"}, \"creator_id\": \"eval_bad input_4\"}"
+  },
+  {
+    "status": 400,
+    "guess": null,
+    "confidence": null,
+    "model_score": null,
+    "style_score": null,
+    "label": null,
+    "sent": "{\"text\": {\"text\": 12345, \"creator_id\": \"eval_bad_number\"}, \"creator_id\": \"eval_bad input_5\"}"
+  },
+  {
+    "status": 400,
+    "guess": null,
+    "confidence": null,
+    "model_score": null,
+    "style_score": null,
+    "label": null,
+    "sent": "{\"text\": {\"text\": \"a\", \"creator_id\": \"eval_bad_single_char\"}, \"creator_id\": \"eval_bad input_6\"}"
+  },
+  {
+    "status": 400,
+    "guess": null,
+    "confidence": null,
+    "model_score": null,
+    "style_score": null,
+    "label": null,
+    "sent": "{\"text\": {\"text\": \"\\n\\t\\r\", \"creator_id\": \"eval_bad_newlines\"}, \"creator_id\": \"eval_bad input_7\"}"
+  },
+  {
+    "status": 400,
+    "guess": null,
+    "confidence": null,
+    "model_score": null,
+    "style_score": null,
+    "label": null,
+    "sent": "{\"text\": {\"text\": [\"item1\", \"item2\"], \"creator_id\": \"eval_bad_list\"}, \"creator_id\": \"eval_bad input_8\"}"
+  },
+  {
+    "status": 400,
+    "guess": null,
+    "confidence": null,
+    "model_score": null,
+    "style_score": null,
+    "label": null,
+    "sent": "{\"text\": {\"text\": {\"nested\": \"object\"}, \"creator_id\": \"eval_bad_object\"}, \"creator_id\": \"eval_bad input_9\"}"
+  },
+  {
+    "status": 400,
+    "guess": null,
+    "confidence": null,
+    "model_score": null,
+    "style_score": null,
+    "label": null,
+    "sent": "{\"text\": {\"text\": \"word word word word word word word word word word word word word word word word word word word word w"
+  }
+]
 ```
 
 **Diagnoses**
