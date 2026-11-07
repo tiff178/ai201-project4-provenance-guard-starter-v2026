@@ -327,9 +327,9 @@ The first one is slow while the model loads.
 
 ## Run Log and Verdicts
 
-| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict | 
 |---|---|---|---|---|---|
-| 1. Real writers are almost never falsely flagged as AI | ≤ 1 of 10 | 0/10 | 0/10 | 0/10 | MET |
+| 1. Real writers are almost never falsely flagged as AI | ≤ 1 of 10 | 0/10 | 0/10 | 0/10 | MET | 
 | 2. Clearly-AI and clearly-human text score clearly apart | gap ≥ 0.3 | 0.099 | 0.099 | 0.099 | MISSED |
 | 3. Every label (`high-confidence AI`, `high-confidence human`, `unsure`) is reachable | each label ≥ 2 of 15 | 3 `ai`, 3 `human`, 9 `unsure` | 3 `ai`, 3 `human`, 9 `unsure` | 3 `ai`, 3 `human`, 9 `unsure` | MET |
 | 4. Appeals always change status and are recorded | 10 of 10 | 10/10 | 10/10 | 10/10 | MET |
@@ -787,23 +787,23 @@ Criterion 5, Trial 1: bad input (`run_eval.py::main`)
 ]
 ```
 
+| # | Criterion | Target | Verdict | How I decided |
+|---|---|---|---|---|
+| 1 | Real writers are almost never falsely flagged as AI | ≤ 1 of 10 | MET | Across all 3 trials, 0 of 10 were assigned a label of `ai`. An `unsure` label does not count as false positive. This target is met as none of the 10 texts I wrote myself were assigned `ai`. |
+| 2 | Clearly-AI and clearly-human text score clearly apart | gap ≥ 0.3 | MISSED | Calculated the average confidence score of the 5 clearly-AI texts (0.4108) and 5 clearly-human texts (0.3122), the resulting gap was 0.099; below the target threshold of 0.3 across all 3 trials. |
+| 3 | Every label (`high-confidence AI`, `high-confidence human`, `unsure`) is reachable | each label ≥ 2 of 15 | MET | Counted the frequency of each label returned across the 15 text submissions, each trial returned 3 `ai`, 3 `human`, and 9 `unsure` labels, meeting the target of at least 2 occurrences per label. |
+| 4 | Appeals always change status and are recorded | 10 of 10 | MET | All 10 of 10 (manually-tested by hand) successfully update the status to `under_review` in `logs/audit.jsonl` with a timestamp and the writer's reasoning based on `content_id`. |
+| 5 | Missing, empty, or enormous texts are handled explicitly | 10 of 10 | MET | All 10 of 10 are handled explicitly as it returned HTTP 400 Bad Request status code without crashing the service across all 3 trials. |
+
 **Diagnoses**
 
-<!-- For each miss AND each broken attack: the stage and the mechanism.
+Criterion 2, Score Spread - Clearly-AI and clearly-human text score clearly apart (gap ≥ 0.3): 
+- Criterion 2 failed to hit the target separation gap of 0.3, achieving a confidence gap of only 0.099 across all 3 trials (average AI confidence of 0.4108 and average human confidence of 0.3122). This failure is likely at two stages: *Signal Two - the style signal (`stylometry.py`) and the combining rule (`scoring.py::combine_signals`)*. Signal Two - the style signal analyzes surface-level structural features like sentence length variation, unique word ratio (vocabulary diversity), and punctuation density. Given the short-text submissions for score spread (`scenarios.py`), it lacks the length needed for variance and the style signal consistently outputs netural scores clustered around (0.35-0.55). When `scoring.py::combine_signals` averages both Signal One - the model signal and Signal Two - the style signal with equal weighting (`WEIGHT_MODEL_SIGNAL = 0.5` and `WEIGHT_STYLE_SIGNAL = 0.5`), the neutral `style_score` creates a bidirectional drag - pulling high AI model scores down and low human model scores up toward 0.5. Furthermore, when the signals split by more than 0.3, the disagreement limit rule forcibly holds the score inside the unsure band (0.35–0.70). Confidence measures distance from the 0.5 midpoint, this middle compression limits confidence for both categories and compresses the overall gap to just 0.099.
 
-     Your service has five stages: the route, signal one, signal two, the
-     combining rule, and the label mapping.
-
-     Not a diagnosis:  "The evasion attacks got through."
-     A diagnosis:      "Four evasion inputs got through. All four had typos
-                        added to AI-generated text. My second signal measures
-                        word variety, and typos raise word variety — so it read
-                        them as more human. My combining rule weights that
-                        signal at 0.6, so it dragged the whole score down."
-
-     Look for a pattern. Five failures on one signal is one problem, not five. -->
-
-
+Broken Attacks - Evasion (`EV01-EV09`), False Positive (`FP03-FP05`), Malformed (`MF02` - HTTP 500 Internal Server Error, `MF06`, `MF07`, `RQ06`):
+- Evasion Attacks (`EV01-EV09`) fails at *Signal Two - the style signal (`stylometry.py`) and the combining rule (`scoring.py::combine_signals`)*. AI-text modified with minor edits, such as adding typos, breaking up sentences, pasting quotes, etc. artificially inflates vocabulary diversity and structural variance. This causes Signal Two - the style signal to output low or neutral `style_score` values. When `scoring.py::combine_signals` averages both Signal One - the model signal and Signal Two - the style signal with equal weighting (`WEIGHT_MODEL_SIGNAL = 0.5` and `WEIGHT_STYLE_SIGNAL = 0.5`), this neutral `style_score` drags the overall combined score below 0.7 into `unsure` or `human`, allowing AI-text to evade detection. 
+- False Positive Attacks (`FP03-FP05`) fails at *Signal One - the model signal (`detector.py`) and label mapping (`scoring.py::score_to_label`)*. Authentic human writing that is formal, structured, or written carefully by a non-native English speaker generates highly predictable token sequences. This causes Signal One - the model signal to assign an artificially high `model_score` (> 0.8), which pushes the combined score past 0.7 into a false `ai` classification, misflagging real writers. 
+- Malformed Attacks (`MF02` - HTTP 500 Internal Server Error, `MF06`, `MF07`, `RQ06`) fails at *`app.py::submit`*. Input text length is not validated before passing to the next signal, causing a single character text (`MF02`) to trigger an exception and crash with an HTTP 500 Internal Server Error instead of returning a HTTP 400 Bad Request status code. Other things like emojis and RTL text distort language model token probabilities into false `ai` classifications, while passing a JSON object for `creator_id` bypasses strict type checking prior to entry. 
 
 ---
 
