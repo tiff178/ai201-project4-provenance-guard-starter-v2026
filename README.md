@@ -981,7 +981,7 @@ Criterion 2, Score Spread — Clearly-AI and clearly-human text score clearly ap
 - I prioritized eliminating server crashes first, refactoring `stylometry.py` would take more time, so I stopped here. 
 
 Broken Attacks - Evasion (`EV01-EV09`), False Positive (`FP05`):
-- For evasion attacks, I would introduce adversarial text normalization (stripping inserted typos, quotes, and artificial line breaks) prior to stylometric calculation, preventing minor edits from artificially inflating style_score. For false positives, I would calibrate `detector.py` for formal, repetitive, or technical registers by introducing domain-aware perplexity scaling so structured/formal technical writing isn't misflagged. 
+- For evasion attacks, I would introduce adversarial text normalization (stripping inserted typos, quotes, and artificial line breaks) prior to stylometric calculation, preventing minor edits from artificially inflating style_score. For false positives attacks, I would calibrate `detector.py` for formal, repetitive, or technical registers by introducing domain-aware perplexity scaling so structured/formal technical writing isn't misflagged. 
 - Adjusting the thresholds further risks introducing false positives, so I stopped here. 
 
 
